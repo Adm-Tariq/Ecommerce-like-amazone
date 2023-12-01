@@ -4,7 +4,8 @@ const data = {
       name: "Nike Slim shirt",
       slug: "nike-slim-shirt",
       category: "Shirts",
-      image: "./images/p-1.jpg", // 679px × 829px
+      image:
+        "https://images.pexels.com/photos/428340/pexels-photo-428340.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1", // 679px × 829px
       price: 120,
       countInStock: 10,
       brand: "Nike",
@@ -17,7 +18,8 @@ const data = {
       name: "Adidas Fit Shirt",
       slug: "adidas-fit-shirt",
       category: "Shirts",
-      image: "./images/p-2.jpg",
+      image:
+        "https://images.pexels.com/photos/6311475/pexels-photo-6311475.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
       price: 250,
       countInStock: 0,
       brand: "Adidas",
@@ -30,7 +32,8 @@ const data = {
       name: "Nike Slim Pant",
       slug: "nike-slim-pant",
       category: "Pants",
-      image: "./images/p-3.jpg",
+      image:
+        "https://images.pexels.com/photos/7691254/pexels-photo-7691254.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
       price: 25,
       countInStock: 15,
       brand: "Nike",
@@ -43,7 +46,8 @@ const data = {
       name: "Adidas Fit Pant",
       slug: "adidas-fit-pant",
       category: "Pants",
-      image: "./images/p-4.jpg",
+      image:
+        "https://images.pexels.com/photos/10042905/pexels-photo-10042905.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
       price: 65,
       countInStock: 5,
       brand: "Puma",

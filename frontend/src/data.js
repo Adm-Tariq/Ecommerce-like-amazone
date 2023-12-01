@@ -1,7 +1,7 @@
-import p1 from "./images/p-1.jpg";
-import p2 from "./images/p-2.jpg";
-import p3 from "./images/p-3.jpg";
-import p4 from "./images/p-4.jpg";
+// import p1 from "./images/p-1.jpg";
+// import p2 from "./images/p-2.jpg";
+// import p3 from "./images/p-3.jpg";
+// import p4 from "./images/p-4.jpg";
 
 const data = {
   products: [
@@ -10,7 +10,7 @@ const data = {
       name: "Nike Slim shirt",
       slug: "nike-slim-shirt",
       category: "Shirts",
-      image: p1, // 679px × 829px
+      image: "./images/p-1.jpg", // 679px × 829px
       price: 120,
       countInStock: 10,
       brand: "Nike",
@@ -23,7 +23,7 @@ const data = {
       name: "Adidas Fit Shirt",
       slug: "adidas-fit-shirt",
       category: "Shirts",
-      image: p2,
+      image: "./images/p-1.jpg",
       price: 250,
       countInStock: 0,
       brand: "Adidas",
@@ -36,7 +36,7 @@ const data = {
       name: "Nike Slim Pant",
       slug: "nike-slim-pant",
       category: "Pants",
-      image: p3,
+      image: "./images/p-1.jpg",
       price: 25,
       countInStock: 15,
       brand: "Nike",
@@ -49,7 +49,7 @@ const data = {
       name: "Adidas Fit Pant",
       slug: "adidas-fit-pant",
       category: "Pants",
-      image: p4,
+      image: "./images/p-1.jpg",
       price: 65,
       countInStock: 5,
       brand: "Puma",
