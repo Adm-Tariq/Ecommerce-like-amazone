@@ -4,6 +4,8 @@ import cors from "cors";
 
 import mongoose from "mongoose";
 import dotenv from "dotenv";
+import seedRouter from "./routes/seedRoutes.js";
+import productRouter from "./routes/productRoutes.js";
 
 dotenv.config();
 
@@ -20,26 +22,9 @@ const app = express();
 const port = 5000;
 app.use(cors());
 
+app.use("/api/seed", seedRouter);
+app.use("/api/products", productRouter);
+
 app.get("/api/products", (req, res) => res.send(data.products));
-
-app.get("/api/products/slug/:slug", (req, res) => {
-  const product = data.products.find((x) => x.slug === req.params.slug);
-
-  if (product) {
-    res.send(product);
-  } else {
-    res.status(404).send({ message: "Page Not Found" });
-  }
-});
-
-app.get("/api/products/:id", (req, res) => {
-  const product = data.products.find((x) => x._id === req.params.id);
-
-  if (product) {
-    res.send(product);
-  } else {
-    res.status(404).send({ message: "Page Not Found" });
-  }
-});
 
 app.listen(port, () => console.log(`listening on port ${port}!`));
