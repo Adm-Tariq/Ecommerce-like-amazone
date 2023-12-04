@@ -9,10 +9,11 @@ import {
   ListGroupItem,
   Card,
 } from "react-bootstrap";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import MessageBox from "../components/MessageBox";
 import axios from "axios";
 const CartScreen = () => {
+  const navigate = useNavigate();
   const { state, dispatch: ctxDispatch } = useContext(Store);
   const {
     cart: { cartItems },
@@ -30,6 +31,14 @@ const CartScreen = () => {
       type: "CART_ADD_ITEM",
       payload: { ...item, quantity },
     });
+  };
+
+  const removeItemHandler = (item) => {
+    ctxDispatch({ type: "CART_REMOVE_ITEM", payload: item });
+  };
+
+  const checkoutHandler = () => {
+    navigate("/signin?redirect=/shipping");
   };
 
   return (
@@ -80,7 +89,10 @@ const CartScreen = () => {
                     </Col>
                     <Col md={3}>${item.price}</Col>
                     <Col md={2}>
-                      <Button variant="light">
+                      <Button
+                        onClick={() => removeItemHandler(item)}
+                        variant="light"
+                      >
                         <i className="fas fa-trash"></i>
                       </Button>
                     </Col>
@@ -106,6 +118,7 @@ const CartScreen = () => {
                     <Button
                       type="button"
                       variant="primary"
+                      onClick={checkoutHandler}
                       disabled={cartItems.length === 0}
                     >
                       Proceed to Checkout
