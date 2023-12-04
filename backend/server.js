@@ -2,6 +2,20 @@ import express from "express";
 import data from "./data.js";
 import cors from "cors";
 
+import mongoose from "mongoose";
+import dotenv from "dotenv";
+
+dotenv.config();
+
+mongoose
+  .connect(process.env.MONGODB_URI)
+  .then(() => {
+    console.log("connected to db");
+  })
+  .catch((error) => {
+    console.log(error.message);
+  });
+
 const app = express();
 const port = 5000;
 app.use(cors());
