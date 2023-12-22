@@ -1,37 +1,116 @@
+import axios from "axios";
 import React, { useContext, useEffect, useReducer } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { PayPalButtons, usePayPalScriptReducer } from "@paypal/react-paypal-js";
+import { Helmet } from "react-helmet-async";
+import { useNavigate, useParams } from "react-router-dom";
+import Row from "react-bootstrap/Row";
+import Col from "react-bootstrap/Col";
+import Button from "react-bootstrap/Button";
+import ListGroup from "react-bootstrap/ListGroup";
+import Card from "react-bootstrap/Card";
+import { Link } from "react-router-dom";
 import LoadingBox from "../components/LoadingBox";
 import MessageBox from "../components/MessageBox";
 import { Store } from "../Store";
-import axios from "axios";
 import { getError } from "../utils/error";
-import { Helmet } from "react-helmet-async";
-import { Card, Col, Row, ListGroup } from "react-bootstrap";
+import { toast } from "react-toastify";
 
-const reducer = (state, action) => {
+function reducer(state, action) {
   switch (action.type) {
     case "FETCH_REQUEST":
       return { ...state, loading: true, error: "" };
     case "FETCH_SUCCESS":
       return { ...state, loading: false, order: action.payload, error: "" };
     case "FETCH_FAIL":
+      return { ...state, loading: false, error: action.payload };
+    case "PAY_REQUEST":
+      return { ...state, loadingPay: true };
+    case "PAY_SUCCESS":
+      return { ...state, loadingPay: false, successPay: true };
+    case "PAY_FAIL":
+      return { ...state, loadingPay: false };
+    case "PAY_RESET":
+      return { ...state, loadingPay: false, successPay: false };
+
     default:
       return state;
   }
-};
+}
 
-const OrderScreen = () => {
+export default function OrderScreen() {
   const { state } = useContext(Store);
   const { userInfo } = state;
+
   const params = useParams();
   const { id: orderId } = params;
   const navigate = useNavigate();
 
-  const [{ loading, error, order }, dispatch] = useReducer(reducer, {
+  const [
+    {
+      loading,
+      error,
+      order,
+      successPay,
+      loadingPay,
+      loadingDeliver,
+      successDeliver,
+    },
+    dispatch,
+  ] = useReducer(reducer, {
     loading: true,
     order: {},
     error: "",
+    successPay: false,
+    loadingPay: false,
   });
+
+  const [{ isPending }, paypalDispatch] = usePayPalScriptReducer();
+
+  function createOrder(data, actions) {
+    return actions.order
+      .create({
+        purchase_units: [
+          {
+            amount: { value: order.totalPrice },
+          },
+        ],
+      })
+      .then((orderID) => {
+        return orderID;
+      });
+  }
+
+  async function onApprove(data, actions) {
+    try {
+      dispatch({ type: "PAY_REQUEST" });
+      const { data } = await axios.post(`/api/orders/${order._id}/pay`, {
+        headers: { authorization: `Bearer ${userInfo.toke}` },
+      });
+      dispatch({ type: "PAY_SUCCESS", payload: data });
+      toast.success("Order is paid");
+    } catch (err) {
+      dispatch({ type: "PAY_FAIL", payload: getError(err) });
+      toast.error(getError(err));
+    }
+
+    // return actions.order.capture().then(async () => {
+    //   try {
+    //     dispatch({ type: "PAY_REQUEST" });
+    //     const { data } = await axios.put(`/api/orders/${order._id}/pay`, {
+    //       headers: { authorization: `Bearer ${userInfo.toke}` },
+    //     });
+    //     dispatch({ type: "PAY_SUCCESS", payload: data });
+    //     toast.success("Order is paid");
+    //   } catch (err) {
+    //     dispatch({ type: "PAY_FAIL", payload: getError(err) });
+    //     toast.error(getError(err));
+    //   }
+    // });
+  }
+
+  function onError(err) {
+    toast.error(getError(err));
+  }
 
   useEffect(() => {
     const fetchOrder = async () => {
@@ -41,17 +120,44 @@ const OrderScreen = () => {
           headers: { authorization: `Bearer ${userInfo.toke}` },
         });
         dispatch({ type: "FETCH_SUCCESS", payload: data });
-      } catch (error) {
-        dispatch({ type: "FETCH_FAIL", payload: getError(error) });
+      } catch (err) {
+        dispatch({ type: "FETCH_FAIL", payload: getError(err) });
       }
     };
+
     if (!userInfo) {
       return navigate("/login");
     }
-    if (!order._id || (order._id && order._id !== orderId)) {
+    if (
+      !order._id ||
+      successPay ||
+      successDeliver ||
+      (order._id && order._id !== orderId)
+    ) {
       fetchOrder();
+      if (successPay) {
+        dispatch({ type: "PAY_RESET" });
+      }
+      if (successDeliver) {
+        dispatch({ type: "DELIVER_RESET" });
+      }
+    } else {
+      const loadPaypalScript = async () => {
+        const { data: clientId } = await axios.get("/api/keys/paypal", {
+          headers: { authorization: `Bearer ${userInfo.toke}` },
+        });
+        paypalDispatch({
+          type: "resetOptions",
+          value: {
+            "client-id": clientId,
+            currency: "USD",
+          },
+        });
+        paypalDispatch({ type: "setLoadingStatus", value: "pending" });
+      };
+      loadPaypalScript();
     }
-  }, [order, userInfo, orderId, navigate]);
+  }, [order, userInfo, orderId, navigate, paypalDispatch, successPay]);
 
   return loading ? (
     <LoadingBox></LoadingBox>
@@ -63,34 +169,39 @@ const OrderScreen = () => {
         <title>Order {orderId}</title>
       </Helmet>
       <h1 className="my-3">Order {orderId}</h1>
-
       <Row>
         <Col md={8}>
           <Card className="mb-3">
             <Card.Body>
               <Card.Title>Shipping</Card.Title>
-
               <Card.Text>
-                <strong>Name:</strong> {order.shippingAddress.fulName} <br />
-                <strong>Address:</strong> {order.shippingAddress.address},
-                {order.shippingAddress.city},{order.shippingAddress.postalCode},
-                {order.shippingAddress.country}
+                <strong>Name:</strong> {order.shippingAddress.fullName} <br />
+                <strong>Address: </strong> {order.shippingAddress.address},
+                {order.shippingAddress.city}, {order.shippingAddress.postalCode}
+                ,{order.shippingAddress.country}
+                &nbsp;
+                {order.shippingAddress.location &&
+                  order.shippingAddress.location.lat && (
+                    <a
+                      target="_new"
+                      href={`https://maps.google.com?q=${order.shippingAddress.location.lat},${order.shippingAddress.location.lng}`}
+                    >
+                      Show On Map
+                    </a>
+                  )}
               </Card.Text>
-
               {order.isDelivered ? (
                 <MessageBox variant="success">
-                  Delivered at {order.DeliveredAt}
+                  Delivered at {order.deliveredAt}
                 </MessageBox>
               ) : (
                 <MessageBox variant="danger">Not Delivered</MessageBox>
               )}
             </Card.Body>
           </Card>
-
           <Card className="mb-3">
             <Card.Body>
               <Card.Title>Payment</Card.Title>
-
               <Card.Text>
                 <strong>Method:</strong> {order.paymentMethod}
               </Card.Text>
@@ -130,7 +241,6 @@ const OrderScreen = () => {
             </Card.Body>
           </Card>
         </Col>
-
         <Col md={4}>
           <Card className="mb-3">
             <Card.Body>
@@ -142,14 +252,12 @@ const OrderScreen = () => {
                     <Col>${order.itemsPrice.toFixed(2)}</Col>
                   </Row>
                 </ListGroup.Item>
-
                 <ListGroup.Item>
                   <Row>
                     <Col>Shipping</Col>
                     <Col>${order.shippingPrice.toFixed(2)}</Col>
                   </Row>
                 </ListGroup.Item>
-
                 <ListGroup.Item>
                   <Row>
                     <Col>Tax</Col>
@@ -158,10 +266,30 @@ const OrderScreen = () => {
                 </ListGroup.Item>
                 <ListGroup.Item>
                   <Row>
-                    <Col>Order Total</Col>
-                    <Col>${order.totalPrice.toFixed(2)}</Col>
+                    <Col>
+                      <strong> Order Total</strong>
+                    </Col>
+                    <Col>
+                      <strong>${order.totalPrice.toFixed(2)}</strong>
+                    </Col>
                   </Row>
                 </ListGroup.Item>
+                {!order.isPaid && (
+                  <ListGroup.Item>
+                    {isPending ? (
+                      <LoadingBox />
+                    ) : (
+                      <div>
+                        <PayPalButtons
+                          createOrder={createOrder}
+                          onApprove={onApprove}
+                          onError={onError}
+                        ></PayPalButtons>
+                      </div>
+                    )}
+                    {loadingPay && <LoadingBox></LoadingBox>}
+                  </ListGroup.Item>
+                )}
               </ListGroup>
             </Card.Body>
           </Card>
@@ -169,6 +297,4 @@ const OrderScreen = () => {
       </Row>
     </div>
   );
-};
-
-export default OrderScreen;
+}
